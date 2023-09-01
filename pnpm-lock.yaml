@@ -1,0 +1,36 @@
+lockfileVersion: '6.0'
+
+dependencies:
+  '@iamtraction/google-translate':
+    specifier: github:iamtraction/google-translate
+    version: github.com/iamtraction/google-translate/3b0bbd13d105786cf28deac945f36b0cf7dd1369
+
+packages:
+
+  /busboy@1.6.0:
+    resolution: {integrity: sha512-8SFQbg/0hQ9xy3UNTB0YEnsNBbWfhf7RtnzpL7TkBiTBRfrQ9Fxcnz7VJsleJpyp6rVLvXiuORqjlHi5q+PYuA==}
+    engines: {node: '>=10.16.0'}
+    dependencies:
+      streamsearch: 1.1.0
+    dev: false
+
+  /streamsearch@1.1.0:
+    resolution: {integrity: sha512-Mcc5wHehp9aXz1ax6bZUyY5afg9u2rv5cqQI3mRrYkGC8rW2hM02jWuwjtL++LS5qinSyhj2QfLyNsuc+VsExg==}
+    engines: {node: '>=10.0.0'}
+    dev: false
+
+  /undici@5.23.0:
+    resolution: {integrity: sha512-1D7w+fvRsqlQ9GscLBwcAJinqcZGHUKjbOmXdlE/v8BvEGXjeWAax+341q44EuTcHXXnfyKNbKRq4Lg7OzhMmg==}
+    engines: {node: '>=14.0'}
+    dependencies:
+      busboy: 1.6.0
+    dev: false
+
+  github.com/iamtraction/google-translate/3b0bbd13d105786cf28deac945f36b0cf7dd1369:
+    resolution: {tarball: https://codeload.github.com/iamtraction/google-translate/tar.gz/3b0bbd13d105786cf28deac945f36b0cf7dd1369}
+    name: '@iamtraction/google-translate'
+    version: 2.0.1
+    engines: {node: '>=16.0.0'}
+    dependencies:
+      undici: 5.23.0
+    dev: false
