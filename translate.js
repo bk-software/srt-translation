@@ -109,7 +109,27 @@ class JoinedLines {
     this.joinedLines = null
     const text = await readFileText(filename)
     this.fileLines = text.split('\r\n')
-    this.parse(this.fileLines)
+    this.parse()
+    this.creatCleanObjectForTranslation()
+  }
+
+  async creatCleanObjectForTranslation() {
+    let text = ''
+    this.lines.forEach(object => { 
+      text += object.line + '\r\n'
+    })
+
+    const translatedString = await translateToHebrew(text)
+
+    let index = 0 
+    const traslatedLines = translatedString.split('\r\n')
+    this.lines.forEach(object => { 
+      object.translated = traslatedLines[index++]
+    })
+
+    console.log(this.lines)
+    const fileToJSON = JSON.stringify(this.lines, null, 2)
+    await saveTextFile(fileToJSON, 'temp/translatedFile.json')
   }
 
   addRegular(line, time) {
@@ -119,7 +139,6 @@ class JoinedLines {
       line: line,
     }
     this.lines.push(obj)
-    console.log(this.lines)
   }
       
   add(line, time) {
@@ -147,16 +166,15 @@ class JoinedLines {
     this.joinedLines = null
   }
 
-  parse(lines) {
+  parse() {
     let index = 0
-    //console.log('parse', lines)
-    while(index < lines.length) {
-      let line = lines[index++]
+    while(index < this.fileLines.length) {
+      let line = this.fileLines[index++]
       let time
        
       if (isTimeLine(line)) {
         time = line
-        line = lines[index++]
+        line = this.fileLines[index++]
         if (isEndOfSentence(line)) {
           if (this.joined) {
             this.addAndClose(line, time)
@@ -171,18 +189,103 @@ class JoinedLines {
   }
 }
 
-async function connect() {
-  const file = "./eng.srt"
-  // const text = await readFileText(file)
-  // const lines = text.split('\r\n')
+class CreateTranslatedFile {
+  constructor(filenameToSave) {
+    this.filenameToSave = filenameToSave
+  }
 
-  let joinedLines = new JoinedLines()
-  //joinedLines.parse(lines)
-  await joinedLines.parseFile(file)
+  async saveFile() {
+    await saveTextFile(this.translatedContent, this.filenameToSave)
+  }
+
+  async parseLines(tempLines) {
+    this.lines =  tempLines
+
+    this.translatedContent = ''
+    this.index = 1
+    this.lines.forEach(obj => {
+      if (obj.time) {
+        this.addLine(obj.time, obj.translated)
+      } else if (obj.times) {
+
+        obj.translatedLines = []
+        let translatedWords = this.getWords(obj.translated)
+        obj.times.forEach((time, index) => {
+            const isLast = (parseInt(index) + 1) == obj.times.length
+            //console.log('islast', isLast,index,  index + 1, obj.times.length)
+            if (isLast) {
+              const line = this.getStrFromWordsArray(translatedWords)
+              //console.log({isLast: line})
+              this.addLine(time, line)
+              obj.translatedLines.push(line)
+            } else {
+              const wordsCount = this.countWords(obj.lines[index])
+              //console.log(wordsCount)
+              const res = this.getLineByWordCount(translatedWords, wordsCount)
+              //console.log({res})
+              const line = res[0]
+              translatedWords = res[1]
+              this.addLine(time, line)
+              obj.translatedLines.push(line)
+            }
+        })
+      }
+    })
+    console.log(this.translatedContent)
+    this.saveFile()
+  }
+
+  countWords(str) {
+    return this.getWords(str).length;
+  }
+
+  getWords(str) {
+    return str.trim().split(/\s+/);
+  }
+
+  getLineByWordCount(wordsArray, count) {
+    console.log({wordsArray})
+    const wordsForLine = wordsArray.splice(0, count - 1)
+    const line = this.getStrFromWordsArray(wordsForLine)
+    console.log({wordsForLine})
+    console.log({wordsArray})
+
+    return [line, wordsArray]
+  }
+
+  getStrFromWordsArray(arr) {
+    return arr.join(' ')
+  }
+
+  addLine(time, line) {
+      this.translatedContent += `${this.index++}\n\r${time}\n\r${line}\n\r`
+  }
+}
+
+async function connect() {
+  const filename = "./002-flex-direction.srt"
+
+  const joinedLines = new JoinedLines()
+  await joinedLines.parseFile(filename)
 
   console.log(joinedLines.lines)
 }
-connect()
+
+async function test() {
+  const text = await readFileText('./temp/translatedFile.json')
+  console.log(text)
+  const translatedObj = JSON.parse(text)
+  //const translatedObj = tempWords
+
+  const filename = './temp/saved.heb.srt'
+  const aa = new CreateTranslatedFile(filename)
+  await aa.parseLines(translatedObj)
+  console.log(translatedObj)
+}
+
+//connect()
+
+
 
 // line = '00:00:01,100 --> 00:00:07,970'
 // //line = '23'
@@ -191,3 +294,27 @@ connect()
 // endWithPeriod = 'And this is the sort of :default HTML flow!'
 // const result = endWithPeriod.search(/[.?!]$/)
 // console.log(result)
+
+const tempWords = [
+  {
+    "type": "regular",
+    "time": "00:00:00,500 --> 00:00:01,100",
+    "line": "Hey, guys.",
+    "translated": "היי, חבר'ה."
+  },
+  {
+    "type": "connected",
+    "times": [
+      "00:00:01,100 --> 00:00:07,970",
+      "00:00:07,970 --> 00:00:12,400"
+    ],
+    "lines": [
+      "So in the last lesson, we saw how Flexbox can be declared on a container and how it can start already",
+      "doing its thing based on the automatic default values."
+    ],
+    "line": "So in the last lesson, we saw how Flexbox can be declared on a container and how it can start already doing its thing based on the automatic default values.",
+    "translated": "אז בשיעור האחרון, ראינו כיצד ניתן להכריז על Flexbox על קונטיינר וכיצד היא יכולה להתחיל כבר לעשות את שלה בהתבסס על ערכי ברירת המחדל האוטומטיים."
+  },
+]
+
+test()
