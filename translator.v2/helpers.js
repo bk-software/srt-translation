@@ -2,7 +2,7 @@ import translate from '@iamtraction/google-translate';
 import fs from 'fs/promises';
 import path from 'path';
 
-async function readFileText(filename) {
+export async function readFileText(filename) {
   try {
     const data = await fs.readFile(filename, { encoding: 'utf8' });
 
@@ -12,7 +12,7 @@ async function readFileText(filename) {
   }
 }
 
-async function translateToHebrew(text) {
+export async function translateToHebrew(text) {
   try {
     const res = await translate(text, { from: 'en', to: 'iw' });
     return res.text;
@@ -21,7 +21,7 @@ async function translateToHebrew(text) {
   }
 }
 
-async function saveTextFile(content, filename) {
+export async function saveTextFile(content, filename) {
   try {
     await fs.writeFile(filename, content);
   } catch (err) {
@@ -29,33 +29,41 @@ async function saveTextFile(content, filename) {
   }
 }
 
-const findByExtension = async (dir, ext) => {
+export async function findByExtension(dir, ext) {
   const matchedFiles = [];
 
   const files = await fs.readdir(dir);
 
   for (const engName of files) {
+    // skip heb srt files
+    if (engName.includes('.heb')) {
+      console.log('skip:', engName);
+      continue;
+    }
     const fileInfo = path.parse(engName);
 
     if (fileInfo.ext === `.${ext}`) {
-      const hebName = `${fileInfo.name}.heb.${ext}`;
-      // console.log(hebName)
-      matchedFiles.push({ eng: engName, heb: hebName });
+      const hebName = `${dir}/${fileInfo.name}.heb.v2.${ext}`;
+      const jsonName = `${dir}/${fileInfo.name}.heb.v2.json`;
+
+      matchedFiles.push({
+        eng: `${dir}/${engName}`,
+        heb: hebName,
+        json: jsonName,
+      });
     }
   }
 
   return matchedFiles;
-};
+}
 
-async function translateFile(dir, sourceFile, targetFile) {
+export async function translateFile(dir, sourceFile, targetFile) {
   const sourceText = await readFileText(`${dir}/${sourceFile}`);
-  console.log({ sourceText });
   const translatedText = await translateToHebrew(sourceText);
-  console.log({ translatedText });
   await saveTextFile(translatedText, `${dir}/${targetFile}`);
 }
 
-async function getFolderPath() {
+export async function getFolderPath() {
   // get folder name from command line
   const [, , folder] = process.argv;
   if (!folder) {
@@ -76,16 +84,3 @@ async function getFolderPath() {
   console.log(absolutePath);
   return absolutePath;
 }
-
-async function run() {
-  const folderPath = await getFolderPath();
-  console.log('Translate all srt files in folder: \n', folderPath);
-  const srtFiles = await findByExtension(folderPath, 'srt');
-  for (const file of srtFiles) {
-    console.log(file.eng, file.heb);
-    await translateFile(folderPath, file.eng, file.heb);
-    console.log(`translate: ${file.heb}`);
-  }
-}
-
-run();
